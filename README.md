@@ -49,7 +49,7 @@ flowchart TD
         
         %% 1. Ingestion Pipeline
         Q --> E1
-        E1 ==>|Batch Insert| DB
+        E1 -->|Batch Insert| DB
 
         %% 2. Inference Pipeline (FIXED LOGIC)
         App -->|Query| Engine
