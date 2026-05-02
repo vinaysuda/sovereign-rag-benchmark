@@ -70,15 +70,13 @@ flowchart TD
     Out([Validated JSON Response]):::external
 
     %% --- External Perimeters ---
-    Doc --> Q
-    Req --> App
-    Val ==> Out
+    Doc ---> Q
+    Req ---> App
+    Val ---> Out
 
     %% --- Theme Compatibility ---
     style VPC fill:transparent,stroke:#888,stroke-dasharray: 5 5,stroke-width:2px
 ```
-
-
 
 ## 🛠️ The Tech Stack
 
