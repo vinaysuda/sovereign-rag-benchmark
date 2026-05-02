@@ -1,0 +1,109 @@
+# Environment files
+.env
+.venv/
+env/
+venv/
+ENV/
+env.bak/
+venv.bak/
+
+# Data
+data/*
+!data/.gitkeep
+
+# Python artifacts
+__pycache__/
+*.py[cod]
+*.pyc
+*.pyo
+*.pyd
+*$py.class
+*.so
+.Python
+*.egg
+*.egg-info/
+.installed.cfg
+
+# Build / distribution
+build/
+dist/
+develop-eggs/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+
+# Packaging / installer
+*.manifest
+*.spec
+pip-log.txt
+pip-delete-this-directory.txt
+
+# Test / coverage / cache
+htmlcov/
+.tox/
+.coverage
+.coverage.*
+.cache/
+nosetests.xml
+coverage.xml
+*.cover
+.pytest_cache/
+
+# Translations
+*.mo
+*.pot
+
+# Logs
+*.log
+
+# Documentation
+docs/_build/
+
+# Databases / local storage
+*.db
+*.rdb
+*.sqlite3
+lancedb/
+qdrant_data/
+
+# IDEs / editors
+.idea/
+.vscode/
+*.code-workspace
+.spyproject/
+*.swp
+*.swo
+
+# Jupyter
+.ipynb_checkpoints/
+
+# OS-generated files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+Thumbs.db
+ehthumbs.db
+
+# Temporary files
+temp/
+
+# Video files
+*.mp4
+
+# Cursor
+.cursor/
+
+# Notes
+MyNotes.txt
+
+# Optional: ignore these only if you really intend to keep them out of git
+# pyproject.toml
+# uv.lock

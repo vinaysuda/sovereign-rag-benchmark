@@ -1,0 +1,45 @@
+version: '3.8'
+
+services:
+  # 1. The Vector Database
+  postgres:
+    image: pgvector/pgvector:pg16
+    container_name: sovereign_postgres
+    environment:
+      POSTGRES_USER: admin
+      POSTGRES_PASSWORD: securepassword
+      POSTGRES_DB: sovereign_rag
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U admin -d sovereign_rag"]
+      interval: 5s
+      retries: 5
+
+  # 2. The Async Message Broker (For Phase 2 Chunking)
+  redis:
+    image: redis:7-alpine
+    container_name: sovereign_redis
+    ports:
+      - "6379:6379"
+
+  # 3. The Local AI Inference Engine (vLLM)
+  # NOTE: This block assumes deployment on a Linux machine with NVIDIA GPUs.
+  # If you are running this locally on a Mac (Apple Silicon) or pure CPU for testing, 
+  # you would typically mock this out or use Ollama/Llama.cpp instead.
+  vllm-service:
+    image: vllm/vllm-openai:latest
+    container_name: sovereign_vllm
+    ports:
+      - "8000:8000"
+    environment:
+      # Required to pull the official Meta weights
+      - HUGGING_FACE_HUB_TOKEN=${HF_TOKEN} 
+    command: --model meta-llama/Meta-Llama-3-8B-Instruct --max-model-len 4096
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]
