@@ -60,6 +60,8 @@ flowchart TD
         Engine <-->|3. Generate| LLM
         Engine -->|4. Format| Val
         
+        E2 <-->|Vector Search| DB
+        
         %% 3. Observability 
         App -.->|Latency| Otel
         Engine -.->|Tracing| Lang
