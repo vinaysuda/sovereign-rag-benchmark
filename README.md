@@ -24,7 +24,8 @@ flowchart TB
         
         subgraph Ingestion [1. Asynchronous Ingestion]
             direction LR
-            Doc([Raw Docs]) --> Q[{Redis Queue}] --> E1[HF Embeddings]:::ai
+            %% FIX: Changed Q[{Redis Queue}] to Q[(Redis Queue)] to satisfy GitHub parser
+            Doc([Raw Docs]) --> Q[(Redis Queue)] --> E1[HF Embeddings]:::ai
         end
 
         DB[(PostgreSQL + pgvector)]:::db
@@ -131,6 +132,3 @@ uv run python scripts/run_benchmark.py
 
 ## ☁️ Enterprise Deployment Topology
 While this repository provides a local Dockerized benchmark, the architecture is designed for strictly controlled cloud perimeters. See `infrastructure/vllm-gpu-deployment.bicep` for a reference deployment mapping this system to **Azure Container Apps** operating entirely within an internal Virtual Network, secured by **Azure API Management** and **Azure Private Link** to ensure zero public internet routing.
-```
-
-***
