@@ -1,0 +1,64 @@
+Docker Deployment, Application Start & Testing Steps:
+----------------------------------------------------
+
+1. 
+After the Python environment is perfectly synced and structured, we can safely bring the persistent infrastructure online.
+Run this command in your terminal:
+Bash
+docker compose up -d
+(Note: The -d flag runs it in "detached" mode so it doesn't lock up your terminal window.)
+
+2. 
+Run the below command to ingest the RAG data into PostgreSQL
+Bash
+uv run python src/engine/ingest.py
+
+3. 
+Step 1: Accept the Llama 3 License
+Go to this exact URL: https://huggingface.co/meta-llama/Meta-Llama-3-8B-Instruct
+Log into your Hugging Face account.
+At the top of the page, there will be a form to accept the Meta license agreement. Fill it out and submit it. (Note: Access is usually granted instantly, but sometimes takes a few minutes).
+
+Step 2: Generate an Access Token
+Once you have access, click on your profile picture in the top right of Hugging Face and go to Settings.
+On the left menu, click Access Tokens.
+Click New token. Give it a name (like "vLLM Local") and set its role to Read.
+Copy the generated token (it will start with hf_...).
+
+Step 3: The vLLM Docker Command
+Because vLLM requires heavy GPU compilation, the absolute best way to run it locally without polluting your Python environment is via its official Docker image.
+(Note: Meta Llama 3 is a gated model. You must have accepted the terms on Hugging Face and have a Hugging Face Access Token ready. If you already ran the ingestion script, you likely already have this token configured!)
+Open a new terminal window (leave your FastAPI server running in the other one), and run this massive command.
+If you are on Windows using WSL2 with an NVIDIA GPU:
+Bash
+docker run --gpus all \
+  # -v ~/.cache/huggingface:/root/.cache/huggingface \      # This stores the LLM to local C drive default path "C:\Users\<YourUsername>\.cache\huggingface"
+  # -v D:\huggingface_cache:/root/.cache/huggingface \      # This stores the LLM to local D drive specified path
+  -v "$(pwd)/.model_cache:/root/.cache/huggingface" \       # This stores the LLM to project folder ".model_cache"
+  --env "HF_TOKEN=your_hugging_face_token_here" \
+  -p 8000:8000 \
+  --ipc=host \
+  vllm/vllm-openai:latest \
+  # --model meta-llama/Meta-Llama-3-8B-Instruct \           # Not using this model due to VRAM limiatation on my PC since its large in size
+  --model meta-llama/Llama-3.2-1B-Instruct \
+  --max-model-len 2048 \
+  --gpu-memory-utilization 0.75
+
+4. 
+Since the vLLM server is running on port 8000 (the standard OpenAI-compatible port), let's run the FastAPI application on port 8080 to avoid any conflicts.
+Run this command in your terminal:
+Bash
+uv run uvicorn src.api.main:app --host 0.0.0.0 --port 8080 --reload
+
+5. 
+The Moment of Truth: The End-to-End Test
+Once you see the FastAPI application running on (http://0.0.0.0:8080) and vLLM container output Uvicorn running on (http://0.0.0.0:8000) (this usually takes 1-3 minutes the first time it loads the weights into VRAM), your entire Sovereign RAG Benchmark is fully operational.
+You can now hit the FastAPI endpoint to test the complete architecture. Open a third terminal window and send this exact curl request:
+Bash
+curl -X 'POST' \
+  'http://localhost:8080/api/v1/query' \
+  -H 'accept: application/json' \
+  -H 'Content-Type: application/json' \
+  -d '{
+  "query": "According to the financial data sovereignty directive, where must vector embeddings be stored?"
+}'
