@@ -190,7 +190,7 @@ uv run uvicorn src.api.main:app --host 0.0.0.0 --port 8080 --reload
 ```
 
 **Test the Pipeline:**
-In a separate terminal, execute this query to verify the end-to-end RAG generation:
+In a separate terminal, execute this query to verify the end-to-end RAG generation.
 ```bash
 curl -X 'POST' \
   'http://localhost:8080/api/v1/query' \
