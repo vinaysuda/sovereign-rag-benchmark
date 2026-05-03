@@ -193,7 +193,7 @@ uv run uvicorn src.api.main:app --host 0.0.0.0 --port 8080 --reload
 
 In a separate terminal, execute this query to verify the end-to-end RAG generation.
 ```bash
-curl -X 'POST' \
+curl -s -X 'POST' \
   'http://localhost:8080/api/v1/query' \
   -H 'accept: application/json' \
   -H 'Content-Type: application/json' \
@@ -213,7 +213,7 @@ curl -X 'POST' \
          "relevance_score": 0.8002
       }
    ],
-   "processing_time_ms": 1876.64
+   "processing_time_ms": 469.97
 }
 ```
 
