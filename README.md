@@ -12,6 +12,7 @@ In production environments mirroring this architecture, the system achieved:
 - **Retrieval Precision:** Improved precision on domain-specific regulatory queries by **43%** using strict metadata pre-filtering.
 - **Latency:** Sustained **sub-200ms** retrieval latency across a corpus of 500,000+ indexed document chunks.
 - **Ingestion Velocity:** Reduced full-corpus re-ingestion time from **6.2 hours to 1.4 hours** using Redis-backed asynchronous chunking queues.
+- **Hardware Efficiency:** Successfully executed end-to-end inference workflows on strictly constrained **6GB VRAM** edge hardware.
 
 ## 🏗️ System Architecture
 
@@ -78,10 +79,12 @@ flowchart TD
     style VPC fill:transparent,stroke:#888,stroke-dasharray: 5 5,stroke-width:2px
 ```
 
+
+
 ## 🛠️ The Tech Stack
 
 - **AI & Orchestration (The Sovereign Core)**
-  - **Meta Llama 3 (8B Instruct):** Served locally via **vLLM** for high-throughput, air-gapped inference.
+  - **Meta Llama 3.2 (1B Instruct):** Served locally via **vLLM**. Highly optimized to run on constrained hardware (≥6GB VRAM) while maintaining enterprise logic.
   - **Hugging Face (`BAAI/bge-large-en-v1.5`):** Self-hosted, state-of-the-art local embedding model.
   - **LlamaIndex:** Core framework for data ingestion and Hybrid RAG pipeline orchestration.
 - **Backend & Data Processing**
@@ -97,7 +100,7 @@ flowchart TD
 
 ```text
 sovereign-rag-benchmark/
-├── docker-compose.yml          # Local infrastructure (pgvector, Redis, vLLM)
+├── docker-compose.yml          # Local infrastructure (pgvector, Redis)
 ├── pyproject.toml              # Strict dependency management via `uv`
 ├── infrastructure/             # Cloud IaC (Azure Bicep for secure VPC deployment)
 ├── scripts/                    # Benchmarking and synthetic data generation
@@ -115,21 +118,37 @@ sovereign-rag-benchmark/
 
 ### 1. Prerequisites & Environment
 
-- **Hardware:** An NVIDIA GPU is recommended for vLLM inference.
-- **Tokens:** You must accept Meta's Llama 3 license on Hugging Face and generate an access token.
+- **Hardware:** An NVIDIA GPU is recommended for vLLM inference (minimum 6GB VRAM supported).
+- **Access Token:** You must accept Meta's Llama 3.2 license on Hugging Face to download the weights and then generate an access token.
+- **Git Hygiene:** Ensure your .gitignore includes .model_cache/ and .env before proceeding so massive weights and keys are not committed.
 
 Create a `.env` file in the root directory:
 
 ```env
 HF_TOKEN=hf_your_huggingface_token_here
+LLM_MODEL_NAME="meta-llama/Llama-3.2-1B-Instruct"
 ```
 
 ### 2. Stand Up Infrastructure
 
-Boot the isolated PostgreSQL (`pgvector`), Redis queue, and local `vLLM` container.
+Boot the isolated PostgreSQL (`pgvector`) and Redis queues via Compose.
 
 ```bash
 docker compose up -d
+```
+
+Boot the highly optimized local vLLM inference engine (maps weights locally to avoid re-downloads):
+
+```bash
+docker run --gpus all \
+  -v "$(pwd)/.model_cache:/root/.cache/huggingface" \
+  --env-file .env \
+  -p 8000:8000 \
+  --ipc=host \
+  vllm/vllm-openai:latest \
+  --model meta-llama/Llama-3.2-1B-Instruct \
+  --max-model-len 2048 \
+  --gpu-memory-utilization 0.75
 ```
 
 ### 3. Install Dependencies
@@ -166,15 +185,35 @@ uv run python src/engine/ingest.py
 ### 6. Run the API & Benchmark
 
 Start the FastAPI server:
-
 ```bash
-uvicorn src.api.main:app --reload --port 8080
+uv run uvicorn src.api.main:app --host 0.0.0.0 --port 8080 --reload
 ```
 
-In a separate terminal, execute the automated benchmark load test to verify latency and citation traceability:
-
+**Test the Pipeline:**
+In a separate terminal, execute this query to verify the end-to-end RAG generation:
 ```bash
-uv run python scripts/run_benchmark.py
+curl -X 'POST' \
+  'http://localhost:8080/api/v1/query' \
+  -H 'accept: application/json' \
+  -H 'Content-Type: application/json' \
+  -d '{
+  "query": "According to the financial data sovereignty directive, where must vector embeddings be stored?"
+}'
+```
+
+*(Expected output is a strictly formatted JSON object containing the answer, the direct document excerpt source, the relevance score, and the processing latency):*
+```json
+{
+   "answer": "Vector embeddings of regulatory documents must be stored in an encrypted PostgreSQL instance.",
+   "sources": [
+      {
+         "file_name": "sample_regulation.md",
+         "text_excerpt": "# Directive 2024/XYZ - Financial Data Sovereignty\r\n\r\n## Section 1: Data Isolation\r\nAll customer financial records must be processed within a logically air-gapped perimeter. No personally identifiable information (PII) may be transmitted to external c...",
+         "relevance_score": 0.8002
+      }
+   ],
+   "processing_time_ms": 1876.64
+}
 ```
 
 ## ☁️ Enterprise Deployment Topology
