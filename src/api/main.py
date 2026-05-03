@@ -1,50 +1,58 @@
+from contextlib import asynccontextmanager
+from typing import AsyncGenerator
 from fastapi import FastAPI, HTTPException
-from pydantic import BaseModel
+from fastapi.middleware.cors import CORSMiddleware
 from opentelemetry.instrumentation.fastapi import FastAPIInstrumentor
-from langfuse.llama_index import LlamaIndexInstrumentor
 
-# FIX: Import the correct, updated engine function
-from src.engine.rag_pipeline import configure_engine, get_hybrid_query_engine
-from src.schemas.responses import ComplianceResponse
+from src.core.config import settings
+from src.schemas.responses import QueryRequest, RAGResponse
+from src.engine.rag_pipeline import orchestrator
 
+# 1. Define the Lifespan Context Manager (Modern replacement for on_event)
+@asynccontextmanager
+async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
+    # --- Startup Logic ---
+    print(f"🚀 Starting {settings.api_title} v{settings.api_version}...")
+    print("✅ Inference Pipeline & Orchestrator Online.")
+    
+    yield  # The FastAPI application runs while suspended here
+    
+    # --- Shutdown Logic ---
+    print("🛑 Shutting down Sovereign RAG API...")
+
+# 2. Initialize the FastAPI Application with the lifespan
 app = FastAPI(
-    title="Sovereign RAG Benchmark",
-    description="Air-gapped compliance query engine.",
-    version="1.0.0",
+    title=settings.api_title,
+    version=settings.api_version,
+    description="Secure Air-Gapped Document Intelligence API",
+    lifespan=lifespan
 )
 
-# Instrument Langfuse for RAG Tracing
-langfuse_instrumentor = LlamaIndexInstrumentor()
-langfuse_instrumentor.start()
+# 3. Configure Cross-Origin Resource Sharing (CORS)
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],  # Restrict this to your frontend domain in production
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
-
-class QueryRequest(BaseModel):
-    query: str
-
-
-@app.on_event("startup")
-def startup_event() -> None:  # FIX: Explicit return type
-    configure_engine()
-
-
-@app.post("/api/v1/query", response_model=ComplianceResponse)
-async def query_compliance_docs(
-    payload: QueryRequest,
-) -> ComplianceResponse:  # FIX: Explicit return type
+# 4. The Core Inference Endpoint
+@app.post("/api/v1/query", response_model=RAGResponse, tags=["RAG Inference"])
+async def process_query(request: QueryRequest) -> RAGResponse:
+    """
+    Takes a validated user query, orchestrates the retrieval from PostgreSQL,
+    and generates an air-gapped LLM response via vLLM.
+    """
     try:
-        # Fetch our heavily filtered query engine
-        query_engine = get_hybrid_query_engine()
-
-        # Execute the query
-        response = query_engine.query(payload.query)
-
-        # Format the response to strictly match our Pydantic schema
-        # (In a true production environment, you would map the LlamaIndex source nodes here)
-        return ComplianceResponse(answer=str(response), citations=[], confidence_indicator="High")
-
+        print(f"📥 Received query: '{request.query}'")
+        # Hand off to the Orchestrator we built in Phase 3
+        response = await orchestrator.generate_answer(request.query)
+        return response
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        print(f"❌ Error processing query: {str(e)}")
+        raise HTTPException(status_code=500, detail="Internal inference engine error")
 
-
-# Instrument FastAPI for latency profiling (OpenTelemetry)
+# 5. Observability Integration
+# This automatically instruments every incoming HTTP request and async task
 FastAPIInstrumentor.instrument_app(app)

@@ -101,6 +101,9 @@ temp/
 # Cursor
 .cursor/
 
+# Local LLM Weights
+.model_cache/
+
 # Notes
 MyNotes.txt
 

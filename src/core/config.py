@@ -1,24 +1,31 @@
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 class Settings(BaseSettings):
-    # Database Settings
-    POSTGRES_USER: str = "admin"
-    POSTGRES_PASSWORD: str = "securepassword"
-    POSTGRES_DB: str = "sovereign_rag"
-    POSTGRES_HOST: str = "localhost"
-    POSTGRES_PORT: int = 5432
+    # API Settings
+    api_title: str = "Sovereign RAG API"
+    api_version: str = "0.1.0"
+    
+    # PostgreSQL / pgvector Settings (Defaults match our docker-compose)
+    postgres_user: str = "admin"
+    postgres_password: str = "secure_password_here"
+    postgres_db: str = "sovereign_rag"
+    postgres_host: str = "localhost"
+    postgres_port: str = "5432"
+    
+    # Redis Settings
+    redis_host: str = "localhost"
+    redis_port: int = 6379
+    
+    # AI Model Settings
+    embed_model_name: str = "BAAI/bge-small-en-v1.5"
+    embed_dimension: int = 384
+    
+    # vLLM Settings (We will point this to our local OpenAI-compatible endpoint)
+    vllm_base_url: str = "http://localhost:8000/v1" 
+    llm_model_name: str = "meta-llama/Meta-Llama-3-8B-Instruct"
 
-    # Inference & Embeddings (The Sovereign Boundary)
-    # vLLM exposes an API that perfectly mimics OpenAI, so we can use standard tooling
-    VLLM_API_BASE: str = "http://localhost:8000/v1"
-    VLLM_MODEL_NAME: str = "meta-llama/Meta-Llama-3-8B-Instruct"
-    EMBEDDING_MODEL: str = "BAAI/bge-large-en-v1.5"
+    # Pydantic Settings config
+    model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8", extra="ignore")
 
-    # Observability (Placeholders for now)
-    LANGFUSE_PUBLIC_KEY: str = ""
-    LANGFUSE_SECRET_KEY: str = ""
-    LANGFUSE_HOST: str = "https://cloud.langfuse.com"
-
-    model_config = SettingsConfigDict(env_file=".env", extra="ignore")
-
+# Instantiate a global settings object to be imported across the app
 settings = Settings()

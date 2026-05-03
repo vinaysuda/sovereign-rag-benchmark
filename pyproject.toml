@@ -1,3 +1,7 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
 [project]
 name = "sovereign-rag-benchmark"
 version = "0.1.0"
@@ -16,8 +20,9 @@ dependencies = [
     "llama-index-embeddings-huggingface>=0.2.1",
     "llama-index-llms-openai-like>=0.1.3", 
     
-    # Infrastructure Clients
+    # Infrastructure Clients (FIXED: Added asyncpg)
     "psycopg2-binary>=2.9.9",
+    "asyncpg>=0.29.0", 
     "redis>=5.0.4",
     
     # Observability
@@ -27,7 +32,7 @@ dependencies = [
     "opentelemetry-instrumentation-fastapi>=0.45b0"
 ]
 
-# Adding the Dev Tools you rightfully called out
+# Using the modern PEP 735 standard you provided
 [dependency-groups]
 dev = [
     "ruff>=0.4.0",
@@ -47,7 +52,6 @@ target-version = "py312"
 strict = true
 ignore_missing_imports = true
 explicit_package_bases = true
-# follow_imports = "silent"
 exclude = [
     "^\\.venv/",
 ]
@@ -55,3 +59,7 @@ exclude = [
 [tool.pytest.ini_options]
 addopts = "-v --asyncio-mode=auto"
 testpaths = ["tests"]
+
+# Tell Hatchling where our source code lives
+[tool.hatch.build.targets.wheel]
+packages = ["src/api", "src/engine"]

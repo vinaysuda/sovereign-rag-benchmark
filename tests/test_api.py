@@ -1,7 +1,7 @@
 import pytest
 from fastapi.testclient import TestClient
 from src.api.main import app
-from src.schemas.responses import ComplianceResponse
+from src.schemas.responses import RAGResponse
 
 # Initialize the test client
 client = TestClient(app)
@@ -26,7 +26,7 @@ def test_invalid_payload_rejection() -> None:
 # here to return a static response, rather than actually spinning up the LLM.
 # This test assumes the mock is in place or the local Docker stack is running.
 def test_pydantic_schema_enforcement() -> None:
-    """Verify that a successful response strictly adheres to the ComplianceResponse schema."""
+    """Verify that a successful response strictly adheres to the RAGResponse schema."""
     payload = {"query": "What are the latest landing gear torque specs?"}
 
     # For a unit test without the DB, you'd patch the endpoint.
@@ -38,7 +38,7 @@ def test_pydantic_schema_enforcement() -> None:
         data = response.json()
 
         # This will raise a ValidationError if the LLM hallucinated and broke the schema
-        validated_data = ComplianceResponse(**data)
+        validated_data = RAGResponse(**data)
 
         assert hasattr(validated_data, "answer")
         assert hasattr(validated_data, "citations")
