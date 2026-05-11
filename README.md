@@ -220,3 +220,9 @@ curl -s -X 'POST' \
 ## ☁️ Enterprise Deployment Topology
 
 While this repository provides a local Dockerized benchmark, the architecture is designed for strictly controlled cloud perimeters. See `infrastructure/vllm-gpu-deployment.bicep` for a reference deployment mapping this system to **Azure Container Apps** operating entirely within an internal Virtual Network, secured by **Azure API Management** and **Azure Private Link** to ensure zero public internet routing.
+
+---
+
+## 📄 License
+
+Distributed under the MIT License. See `LICENSE` for more information.
